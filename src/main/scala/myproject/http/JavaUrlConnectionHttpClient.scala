@@ -29,7 +29,8 @@ import scala.util.control.NonFatal
  * behaviour may not be identical to an akka client as many of the internals
  * are out of our control.
  *
- * TODO: This should be removed when akka supports connection pooling.
+ * TODO:https://github.com/akka/akka/issues/16856
+ * This should be removed when akka supports connection pooling.
  */
 class JavaUrlConnectionHttpClient()(
     implicit actorSystem: ActorSystem) {
@@ -126,7 +127,8 @@ class JavaUrlConnectionHttpClient()(
           outputStream.flush()
         } catch {
           case NonFatal(_) =>
-            // TODO: Due to an Akka bug, the future will not be completed
+            // TODO:https://github.com/akka/akka/issues/16866
+            // Due to an Akka bug, the future will not be completed
             // if the function throws an exception (avoiding stream closure). While
             // can't reliably reproduce bugs with this, it is safer to protect from it.
             //

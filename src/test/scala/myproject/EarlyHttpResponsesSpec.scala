@@ -62,7 +62,7 @@ class EarlyHttpResponsesSpec
     }
 
     "leave the stream usable if half of the request body was read" in new Scope {
-      // TODO: -- to fix this we need to fix line 142 in HttpServer
+      // TODO:https://github.com/akka/akka/issues/16893 -- to fix this we need to fix line 142 in HttpServer
 
       startServer()
 
@@ -119,7 +119,7 @@ class EarlyHttpResponsesSpec
       }
     }
 
-//    // TODO: use Akka's client when they fix it
+//    // TODO:https://github.com/akka/akka/issues/16865 use Akka's client when they fix it
 //    // https://groups.google.com/forum/#!topic/akka-user/Cw-cx1BnHDk
 //    implicit val fm = ActorFlowMaterializer()
 //    val http = Http()

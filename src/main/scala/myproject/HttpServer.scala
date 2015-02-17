@@ -58,7 +58,7 @@ abstract class HttpServer(
 
     override def mapRequest(request: HttpRequest): BoundRequestResponseMapper = {
 
-      // TODO: all this materializedRequestStream stuff ought to be done by Akka, really
+      // TODO:https://github.com/akka/akka/issues/16893 all this materializedRequestStream stuff ought to be done by Akka, really
 
       // If the request body stream has been fully or partially read, this promise
       // will be completed with an instance of the stream stage added below.
@@ -100,7 +100,7 @@ abstract class HttpServer(
                 // At this point, we really need to consume the rest of the stream.
                 // However, the Akka stream implementation is very resistant to us
                 // cancelling the stream from the outside.
-                // TODO:qq What can we do here?
+                // TODO:https://github.com/akka/akka/issues/16893 What can we do here?
                 val msg = "Internal error: the server is in an inconsistent state. " +
                   "The request body has only been part read, but the endpoint worker " +
                   "has stopped processing. You must fix the endpoint worker. The original " +
@@ -119,7 +119,8 @@ abstract class HttpServer(
             case None =>
               // The request body was never read
               // We must consume the request.
-              // TODO:qq using 'Sink.cancelled' doesn't work, likely due to a
+              // TODO:https://github.com/akka/akka/issues/16893
+              // using 'Sink.cancelled' doesn't work, likely due to a
               // bug in sun.net.www.protocol.http.HttpURLConnection
               request.entity.dataBytes.runWith(Sink.ignore)
               response

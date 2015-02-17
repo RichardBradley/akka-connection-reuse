@@ -58,7 +58,8 @@ abstract class HttpServerBase
 
     // Store the unbind function to save passing round both the binding and the
     // Materialized Map.
-    // TODO: Check what this does to open connections - we need it to
+    // TODO:https://github.com/akka/akka/issues/16894
+    // Check what this does to open connections - we need it to
     // allow them to finish.
     val unbindFn = () => binding.unbind(materializedMap).map(_ => Unbound)
 
@@ -104,7 +105,8 @@ abstract class HttpServerBase
     case Bind =>
       sender() ! Bound(state.address)
     case Unbind =>
-      // TODO:(? no akka issue) this delay shouldn't be needed when Akka fix things
+      // TODO:https://github.com/akka/akka/issues/16894
+      // this delay shouldn't be needed when Akka fix things
       // so that "unbind" waits for currently executing requests to complete
       val unbindF = after(1.second, system.scheduler) {
         state.unbindFn()
