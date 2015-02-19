@@ -62,8 +62,6 @@ class EarlyHttpResponsesSpec
     }
 
     "leave the stream usable if half of the request body was read" in new Scope {
-      // TODO:https://github.com/akka/akka/issues/16893 -- to fix this we need to fix line 142 in HttpServer
-
       startServer()
 
       val responses = sendRequestsOnSameConnection(

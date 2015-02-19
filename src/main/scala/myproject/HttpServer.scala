@@ -1,6 +1,7 @@
 package myproject
 
 import akka.http.InterceptedRouting.interceptedHandlerFlow
+import akka.http.model.headers.Connection
 import akka.http.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.server.Route
 import akka.http.{Http, InterceptedRouting}
@@ -50,9 +51,9 @@ abstract class HttpServer(
   def mapOutgoingResponse(response: HttpResponse): HttpResponse = response
 
   /**
-   * The mapper that [[InterceptedRouting]] uses to map the request and response.
+   * The mapper that [[akka.http.InterceptedRouting]] uses to map the request and response.
    *
-   * This creates and associates a [[RequestResponseMapper]] with the request and its response.
+   * This creates and associates a [[myproject.RequestResponseMapper]] with the request and its response.
    */
   def requestResponseMapper: RequestResponseMapper = new RequestResponseMapper {
 
@@ -97,37 +98,45 @@ abstract class HttpServer(
                 // Nothing to do; the endpoint read the full request body
                 response
               } else {
-                // At this point, we really need to consume the rest of the stream.
+                // At this point, we really ought to consume or close the rest of the stream.
                 // However, the Akka stream implementation is very resistant to us
                 // cancelling the stream from the outside.
                 // TODO:https://github.com/akka/akka/issues/16893 What can we do here?
-                val msg = "Internal error: the server is in an inconsistent state. " +
-                  "The request body has only been part read, but the endpoint worker " +
-                  "has stopped processing. You must fix the endpoint worker. The original " +
-                  "response was:\n" + response
-
-                // The response below bypasses the ExceptionHandler, so won't otherwise
-                // get logged
-                log.error(msg)
-
-                HttpResponse(
-                  StatusCodes.InternalServerError,
-                  entity = msg)
+                //
+                // Sending "Connection: close" means the client will hopefully close the
+                // stream for us.
+                // If they don't, however, then their upload will stall and they will
+                // time out.
+                addConnectionClose(response)
               }
             case Some(Failure(e)) =>
               throw new Exception(e)
             case None =>
               // The request body was never read
-              // We must consume the request.
-              // TODO:https://github.com/akka/akka/issues/16893
-              // using 'Sink.cancelled' doesn't work, likely due to a
-              // bug in sun.net.www.protocol.http.HttpURLConnection
-              request.entity.dataBytes.runWith(Sink.ignore)
-              response
+              // We ought to consume or close the rest of the stream.
+              //
+              // Sending "Connection: close" means the client will hopefully close the
+              // stream for us.
+              // If they don't, however, then their upload will stall and they will
+              // time out.
+              addConnectionClose(response)
           }
 
           mapOutgoingResponse(super.mapResponse(response2))
         }
+      }
+    }
+
+    private def addConnectionClose(response: HttpResponse): HttpResponse = {
+      response.header[Connection] match {
+        case Some(h) if h.hasClose => response
+        case Some(h) =>
+          response
+            .removeHeader(h.name())
+            .addHeader(Connection("close"))
+        case None =>
+          response
+            .addHeader(Connection("close"))
       }
     }
 
